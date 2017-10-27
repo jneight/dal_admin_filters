@@ -1,15 +1,18 @@
 # -*- encoding: utf-8 -*-
-from dal import autocomplete
 from django import forms
 from django.contrib.admin.filters import SimpleListFilter
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.widgets import Media, MEDIA_TYPES
+from django.apps import apps
+
+from dal import autocomplete
 
 
 class AutocompleteFilter(SimpleListFilter):
     template = "dal_admin_filters/autocomplete-filter.html"
     title = ''
     field_name = ''
+    autocomplete_model = ''
     autocomplete_url = ''
     is_placeholder_title = False
     widget_attrs = {}
@@ -41,8 +44,12 @@ class AutocompleteFilter(SimpleListFilter):
 
         self._add_media(model_admin)
 
-        field = forms.ModelChoiceField(
+        if self.autocomplete_model:
+            queryset = apps.get_model(*self.autocomplete_model.split('.', 1))._meta.default_manager.all()
+        else:
             queryset=getattr(model, self.field_name).get_queryset(),
+        field = forms.ModelChoiceField(
+            queryset=queryset,
             widget=autocomplete.ModelSelect2(
                 url=self.autocomplete_url,
             )
